@@ -10,6 +10,7 @@ using TechJobsPersistent.ViewModels;
 using TechJobsPersistent.Data;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace TechJobsPersistent.Controllers
 {
@@ -32,13 +33,55 @@ namespace TechJobsPersistent.Controllers
         [HttpGet("/Add")]
         public IActionResult AddJob()
         {
-            return View();
+            List<Employer> allEmployers = context.Employers.ToList();
+            List<Skill> allSkills = context.Skills.ToList();
+            AddJobViewModel addJobViewModel = new AddJobViewModel(allEmployers, allSkills);
+
+            return View(addJobViewModel);
+        }
+        [HttpPost]
+        public IActionResult ProcessAddJobForm(AddJobViewModel addJobViewModel, string[] selectedSkills)
+        {
+            if (selectedSkills.Length == 0)
+            {
+                ViewBag.ErrorMessage = "Please select at least one Skill.";
+                addJobViewModel.CreateDropdown();
+                return View("AddJob", addJobViewModel);
+            }
+            if (ModelState.IsValid)
+            {
+                var holdJob = new Job //no Id yet; 
+                
+                {
+                    Name = addJobViewModel.Name,
+                    EmployerId = addJobViewModel.EmployerId
+
+                };
+
+                context.Jobs.Add(holdJob);
+                
+                
+                foreach (var skill in selectedSkills)
+                {
+                    var holdJobSkill = new JobSkill 
+                    {
+                        Job = holdJob, 
+                        SkillId = int.Parse(skill)
+                    };
+                    
+                    context.JobSkills.Add(holdJobSkill);
+                    
+                }
+
+                context.SaveChanges();
+                return Redirect("/Add");
+            }
+            
+            addJobViewModel.CreateDropdown();
+            return View("AddJob", addJobViewModel);
         }
 
-        public IActionResult ProcessAddJobForm()
-        {
-            return View();
-        }
+       
 
         public IActionResult Detail(int id)
         {
